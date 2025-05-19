@@ -37,7 +37,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>3.3.2</version>proj-mdp-152-155
+                <version>3.3.2</version>
             </plugin>
         </plugins>
     </build>
@@ -49,3 +49,4 @@
         </repository>
     </distributionManagement>
 </project>
+
