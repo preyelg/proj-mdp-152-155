@@ -4,7 +4,7 @@ variable "aws_region" {
 
 variable "ami_id" {
   description = "Amazon Linux 2 AMI"
-  default     = "ami-060988b0dff2faa7c"  # Change this to region-appropriate if needed
+  default     = "ami-060988b0dff2faa7c"
 }
 
 variable "key_name" {
