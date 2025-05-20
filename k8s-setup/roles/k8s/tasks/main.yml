@@ -1,5 +1,5 @@
 ---
-- name: Install system dependencies
+- name: Install common dependencies
   apt:
     name: "{{ item }}"
     state: present
@@ -28,43 +28,36 @@
     name: docker.io
     state: present
 
-- name: Enable and start Docker service
+- name: Enable and start Docker
   systemd:
     name: docker
     enabled: yes
     state: started
 
-# ---------------- Kubernetes Setup (Modern) ----------------
+# ---------------- Kubernetes Setup (Safe for Ubuntu 22.04) ----------------
 
-- name: Remove legacy Kubernetes files (if exist)
+- name: Remove any old Kubernetes key or repo (if exists)
   file:
     path: "{{ item }}"
     state: absent
   loop:
     - /etc/apt/sources.list.d/kubernetes.list
-    - /etc/apt/keyrings/kubernetes-archive-keyring.gpg
-    - /etc/apt/trusted.gpg.d/kubernetes.gpg
+    - /usr/share/keyrings/kubernetes-archive-keyring.gpg
 
-- name: Create keyrings directory (if needed)
-  file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
-
-- name: Add Kubernetes GPG key to /usr/share/keyrings
+- name: Add Kubernetes GPG key (Google recommended location)
   shell: |
     curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
   args:
     creates: /usr/share/keyrings/kubernetes-archive-keyring.gpg
 
-- name: Add Kubernetes apt repository using blockinfile
+- name: Add Kubernetes apt repository using blockinfile (signed-by)
   blockinfile:
     path: /etc/apt/sources.list.d/kubernetes.list
     create: yes
     block: |
-      deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://packages.cloud.google.com/apt kubernetes-xenial main
+      deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
 
-- name: Update APT cache after Kubernetes repo added
+- name: Update APT cache after adding Kubernetes repo
   apt:
     update_cache: yes
 
@@ -76,14 +69,13 @@
       - kubectl
     state: present
 
-- name: Hold Kubernetes package versions
+- name: Hold Kubernetes packages to prevent automatic upgrades
   apt:
     name:
       - kubelet
       - kubeadm
       - kubectl
     state: present
-    update_cache: yes
     force: yes
     autoremove: no
     upgrade: no
