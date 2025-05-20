@@ -1,2 +1,2 @@
-ami_id     = "ami-0fc5d935ebf8bc3bc" # Ubuntu 22.04 in us-east-1
+ami_id     = "ami-0c3b809fcf2445b6a"
 key_name = "linux"
