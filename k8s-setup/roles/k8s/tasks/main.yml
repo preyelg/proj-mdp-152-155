@@ -15,8 +15,8 @@
 
 - name: Clean apt lists (to reset old indexes)
   shell: rm -rf /var/lib/apt/lists/*
-  args:
-    warn: false
+  changed_when: false
+
 
 # ---------------------------------------------
 # SYSTEM DEPENDENCIES
