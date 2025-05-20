@@ -1,45 +1,13 @@
 provider "aws" {
-  region = var.aws_region
+  region = var.region
 }
 
-resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
-}
-
-resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.main.id
-}
-
-resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = true
-  availability_zone       = data.aws_availability_zones.available.names[0]
-}
-
-data "aws_availability_zones" "available" {}
-
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gw.id
-  }
-}
-
-resource "aws_route_table_association" "a" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
-}
-
-resource "aws_security_group" "instance_sg" {
-  name        = "devops-sg"
-  description = "Allow SSH and HTTP"
-  vpc_id      = aws_vpc.main.id
+resource "aws_security_group" "k8s_sg" {
+  name        = "k8s-sg"
+  description = "Security group for Kubernetes cluster"
+  vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -47,7 +15,34 @@ resource "aws_security_group" "instance_sg" {
   }
 
   ingress {
-    description = "HTTP"
+    from_port   = 6443
+    to_port     = 6443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 10250
+    to_port     = 10250
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
@@ -62,24 +57,18 @@ resource "aws_security_group" "instance_sg" {
   }
 }
 
-resource "aws_instance" "maven" {
-  ami                    = var.ami_id
-  instance_type          = "t2.micro"
-  subnet_id              = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.instance_sg.id]
-  key_name               = var.key_name
-  tags = {
-    Name = "Maven-Builder"
-  }
+data "aws_vpc" "default" {
+  default = true
 }
 
-resource "aws_instance" "tomcat" {
-  ami                    = var.ami_id
-  instance_type          = "t2.micro"
-  subnet_id              = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.instance_sg.id]
-  key_name               = var.key_name
+resource "aws_instance" "k8s" {
+  count         = 3
+  ami           = var.ami_id
+  instance_type = var.instance_type
+  key_name      = var.key_name
+  vpc_security_group_ids = [aws_security_group.k8s_sg.id]
+
   tags = {
-    Name = "Tomcat-Runtime"
+    Name = element(["k8s-master", "k8s-worker-1", "k8s-worker-2"], count.index)
   }
 }
