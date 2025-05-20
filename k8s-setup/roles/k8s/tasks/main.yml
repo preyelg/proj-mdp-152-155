@@ -34,22 +34,26 @@
     enabled: yes
     state: started
 
-# ---------------- Kubernetes Setup (Ubuntu 22.04 compatible) ----------------
+# ---------------- Kubernetes Setup (Jammy Safe) ----------------
 
-- name: Create keyrings directory (if not exists)
+- name: Clean old GPG keys if any (optional)
+  file:
+    path: /etc/apt/trusted.gpg.d/kubernetes.gpg
+    state: absent
+
+- name: Ensure keyrings directory exists
   file:
     path: /etc/apt/keyrings
     state: directory
     mode: '0755'
 
-- name: Download Kubernetes GPG key (ASCII and dearmor it)
+- name: Download Kubernetes GPG key (ASCII-armored and dearmor)
   shell: |
-    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
   args:
     creates: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
-- name: Add Kubernetes APT repository
+- name: Add Kubernetes apt repository (using signed-by)
   apt_repository:
     repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
     filename: kubernetes
@@ -64,7 +68,7 @@
     state: present
     update_cache: yes
 
-- name: Hold Kubernetes packages at current version
+- name: Hold Kubernetes packages
   apt:
     name:
       - kubelet
