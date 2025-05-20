@@ -5,3 +5,13 @@
     cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
     chown ubuntu:ubuntu /home/ubuntu/.kube/config
   when: inventory_hostname == 'k8s-master'
+
+- name: Save kubeadm join command
+  shell: kubeadm token create --print-join-command
+  register: join_cmd
+  when: inventory_hostname == 'k8s-master'
+
+- name: Set fact for join command
+  set_fact:
+    kubeadm_join_command: "{{ join_cmd.stdout }}"
+  when: inventory_hostname == 'k8s-master'
