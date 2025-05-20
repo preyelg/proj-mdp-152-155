@@ -32,14 +32,18 @@
     state: started
 
 - name: Add Kubernetes GPG key
-  apt_key:
+  ansible.builtin.get_url:
     url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    dest: /etc/apt/trusted.gpg.d/kubernetes.gpg
+    mode: '0644'
+
+
+- name: Add Kubernetes repo (Jammy-compatible)
+  apt_repository:
+    repo: "deb https://apt.kubernetes.io/ kubernetes main"
+    filename: kubernetes
     state: present
 
-- name: Add Kubernetes repo
-  apt_repository:
-    repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
-    state: present
 
 - name: Install kubelet, kubeadm, and kubectl
   apt:
