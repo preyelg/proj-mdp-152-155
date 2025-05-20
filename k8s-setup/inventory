@@ -4,3 +4,6 @@ k8s-master ansible_host=172.31.24.150 ansible_user=ubuntu
 [workers]
 k8s-worker-1 ansible_host=172.31.20.152 ansible_user=ubuntu
 k8s-worker-2 ansible_host=172.31.16.109 ansible_user=ubuntu
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
