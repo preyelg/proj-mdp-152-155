@@ -92,15 +92,7 @@
       - kubectl
     state: present
 
-- name: Hold Kubernetes versions to prevent automatic upgrades
-  apt:
-    name:
-      - kubelet
-      - kubeadm
-      - kubectl
-    state: present
-    update_cache: yes
-    force: yes
-    autoremove: no
-    upgrade: no
-    dpkg_options: "hold"
+- name: Hold Kubernetes packages to prevent automatic upgrades
+  shell: apt-mark hold kubelet kubeadm kubectl
+  changed_when: false
+
