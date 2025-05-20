@@ -1,5 +1,27 @@
 ---
-- name: Install common dependencies
+# ---------------------------------------------
+# PRE-CLEANUP: Remove legacy/deprecated sources
+# ---------------------------------------------
+- name: Remove deprecated Kubernetes/Docker apt repos and keyrings
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/apt/sources.list.d/kubernetes.list
+    - /etc/apt/sources.list.d/docker.list
+    - /etc/apt/trusted.gpg.d/kubernetes.gpg
+    - /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+    - /usr/share/keyrings/kubernetes-archive-keyring.gpg
+
+- name: Clean apt lists (to reset old indexes)
+  shell: rm -rf /var/lib/apt/lists/*
+  args:
+    warn: false
+
+# ---------------------------------------------
+# SYSTEM DEPENDENCIES
+# ---------------------------------------------
+- name: Install core dependencies
   apt:
     name: "{{ item }}"
     state: present
@@ -11,8 +33,9 @@
     - gnupg
     - lsb-release
 
-# ---------------- Docker Setup ----------------
-
+# ---------------------------------------------
+# DOCKER INSTALLATION
+# ---------------------------------------------
 - name: Add Docker GPG key
   apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
@@ -34,17 +57,10 @@
     enabled: yes
     state: started
 
-# ---------------- Kubernetes Setup (Modern Mirror) ----------------
-
-- name: Clean up old Kubernetes repo and keys if present
-  file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /etc/apt/sources.list.d/kubernetes.list
-    - /etc/apt/keyrings/kubernetes-archive-keyring.gpg
-
-- name: Create keyrings directory if missing
+# ---------------------------------------------
+# KUBERNETES 1.29+ INSTALLATION (Modern APT Repo)
+# ---------------------------------------------
+- name: Create keyrings directory
   file:
     path: /etc/apt/keyrings
     state: directory
@@ -57,18 +73,18 @@
   args:
     creates: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
-- name: Add Kubernetes APT repo (v1.29+ modern)
+- name: Add Kubernetes APT repo (modern path)
   blockinfile:
     path: /etc/apt/sources.list.d/kubernetes.list
     create: yes
     block: |
       deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /
 
-- name: Update apt cache after adding Kubernetes repo
+- name: Update APT cache after Kubernetes repo added
   apt:
     update_cache: yes
 
-- name: Install Kubernetes tools
+- name: Install kubelet, kubeadm, kubectl (v1.29+)
   apt:
     name:
       - kubelet
@@ -83,6 +99,7 @@
       - kubeadm
       - kubectl
     state: present
+    update_cache: yes
     force: yes
     autoremove: no
     upgrade: no
