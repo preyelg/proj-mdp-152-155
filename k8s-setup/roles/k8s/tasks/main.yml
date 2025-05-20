@@ -34,34 +34,41 @@
     enabled: yes
     state: started
 
-# ---------------- Kubernetes Setup (Safe for Ubuntu 22.04) ----------------
+# ---------------- Kubernetes Setup (Modern Mirror) ----------------
 
-- name: Remove any old Kubernetes key or repo (if exists)
+- name: Clean up old Kubernetes repo and keys if present
   file:
     path: "{{ item }}"
     state: absent
   loop:
     - /etc/apt/sources.list.d/kubernetes.list
-    - /usr/share/keyrings/kubernetes-archive-keyring.gpg
+    - /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
-- name: Add Kubernetes GPG key (Google recommended location)
+- name: Create keyrings directory if missing
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Kubernetes GPG key for pkgs.k8s.io
   shell: |
-    curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | \
+    gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
   args:
-    creates: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+    creates: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
-- name: Add Kubernetes apt repository using blockinfile (signed-by)
+- name: Add Kubernetes APT repo (v1.29+ modern)
   blockinfile:
     path: /etc/apt/sources.list.d/kubernetes.list
     create: yes
     block: |
-      deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+      deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /
 
-- name: Update APT cache after adding Kubernetes repo
+- name: Update apt cache after adding Kubernetes repo
   apt:
     update_cache: yes
 
-- name: Install kubelet, kubeadm, and kubectl
+- name: Install Kubernetes tools
   apt:
     name:
       - kubelet
@@ -69,7 +76,7 @@
       - kubectl
     state: present
 
-- name: Hold Kubernetes packages to prevent automatic upgrades
+- name: Hold Kubernetes versions to prevent automatic upgrades
   apt:
     name:
       - kubelet
