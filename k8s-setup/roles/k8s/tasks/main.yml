@@ -11,53 +11,38 @@
     - gnupg
     - lsb-release
 
-# ---------------- Docker Setup ----------------
-
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
-
-- name: Add Docker repo
-  apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
-
-- name: Install Docker
-  apt:
-    name: docker.io
-    state: present
-
-- name: Enable Docker
-  systemd:
-    name: docker
-    enabled: yes
-    state: started
-
-# ---------------- Kubernetes Setup (Jammy Safe) ----------------
-
-- name: Clean old GPG keys if any (optional)
+- name: Remove broken old GPG/key files
   file:
-    path: /etc/apt/trusted.gpg.d/kubernetes.gpg
+    path: "{{ item }}"
     state: absent
+  loop:
+    - /etc/apt/trusted.gpg.d/kubernetes.gpg
+    - /etc/apt/sources.list.d/kubernetes.list
+    - /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
-- name: Ensure keyrings directory exists
+- name: Create keyrings directory
   file:
     path: /etc/apt/keyrings
     state: directory
     mode: '0755'
 
-- name: Download Kubernetes GPG key (ASCII-armored and dearmor)
+- name: Download and dearmor Kubernetes GPG key
   shell: |
-    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor --yes -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
   args:
     creates: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
-- name: Add Kubernetes apt repository (using signed-by)
-  apt_repository:
-    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
-    filename: kubernetes
-    state: present
+- name: Add Kubernetes APT repo using blockinfile (with allow-insecure)
+  ansible.builtin.blockinfile:
+    path: /etc/apt/sources.list.d/kubernetes.list
+    create: yes
+    block: |
+      deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg allow-insecure=yes] https://apt.kubernetes.io/ kubernetes-xenial main
+
+- name: Update APT cache after adding repo
+  apt:
+    update_cache: yes
 
 - name: Install kubelet, kubeadm, and kubectl
   apt:
@@ -66,7 +51,6 @@
       - kubeadm
       - kubectl
     state: present
-    update_cache: yes
 
 - name: Hold Kubernetes packages
   apt:
@@ -75,7 +59,6 @@
       - kubeadm
       - kubectl
     state: present
-    update_cache: yes
     force: yes
     autoremove: no
     upgrade: no
