@@ -1,3 +1,4 @@
+---
 - name: Install dependencies
   apt:
     name: "{{ item }}"
@@ -9,6 +10,8 @@
     - curl
     - gnupg
     - lsb-release
+
+# ---------------- Docker Setup ----------------
 
 - name: Add Docker GPG key
   apt_key:
@@ -31,19 +34,25 @@
     enabled: yes
     state: started
 
-- name: Add Kubernetes GPG key
-  ansible.builtin.get_url:
+# ---------------- Kubernetes Setup ----------------
+
+- name: Create keyrings directory for Kubernetes
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Kubernetes GPG key (ASCII-armored)
+  get_url:
     url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-    dest: /etc/apt/trusted.gpg.d/kubernetes.gpg
+    dest: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
     mode: '0644'
 
-
-- name: Add Kubernetes repo (Jammy-compatible)
+- name: Add Kubernetes APT repository
   apt_repository:
-    repo: "deb https://apt.kubernetes.io/ kubernetes main"
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
     filename: kubernetes
     state: present
-
 
 - name: Install kubelet, kubeadm, and kubectl
   apt:
@@ -54,7 +63,7 @@
     state: present
     update_cache: yes
 
-- name: Hold Kubernetes packages
+- name: Hold Kubernetes packages at current version
   apt:
     name:
       - kubelet
@@ -62,7 +71,6 @@
       - kubectl
     state: present
     update_cache: yes
-    allow_unauthenticated: yes
     force: yes
     autoremove: no
     upgrade: no
