@@ -34,19 +34,20 @@
     enabled: yes
     state: started
 
-# ---------------- Kubernetes Setup ----------------
+# ---------------- Kubernetes Setup (Ubuntu 22.04 compatible) ----------------
 
-- name: Create keyrings directory for Kubernetes
+- name: Create keyrings directory (if not exists)
   file:
     path: /etc/apt/keyrings
     state: directory
     mode: '0755'
 
-- name: Download Kubernetes GPG key (ASCII-armored)
-  get_url:
-    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-    dest: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
-    mode: '0644'
+- name: Download Kubernetes GPG key (ASCII and dearmor it)
+  shell: |
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
 - name: Add Kubernetes APT repository
   apt_repository:
