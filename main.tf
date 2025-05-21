@@ -1,10 +1,6 @@
+
 provider "aws" {
   region = var.aws_region
-}
-
-resource "aws_key_pair" "kops_key" {
-  key_name   = var.key_name
-  public_key = file(var.public_key_path)
 }
 
 resource "aws_security_group" "kops_sg" {
@@ -30,7 +26,7 @@ resource "aws_security_group" "kops_sg" {
 resource "aws_instance" "kops_admin" {
   ami                         = var.ami_id
   instance_type               = var.instance_type
-  key_name                    = aws_key_pair.kops_key.key_name
+  key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.kops_sg.id]
   associate_public_ip_address = true
 
