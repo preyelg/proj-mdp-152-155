@@ -1,0 +1,26 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  name: cluster.k8s.local
+spec:
+  cloudProvider: aws
+  kubernetesVersion: "1.29.0"
+  networking:
+    kubenet: {}
+  subnets:
+  - name: us-east-2a
+    zone: us-east-2a
+    type: Public
+  - name: us-east-2b
+    zone: us-east-2b
+    type: Public
+  topology:
+    masters: public
+    nodes: public
+  etcdClusters:
+  - name: main
+    etcdMembers:
+    - name: a
+      zone: us-east-2a
+    - name: b
+      zone: us-east-2b
