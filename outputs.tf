@@ -1,3 +1,7 @@
-output "instance_ips" {
-  value = aws_instance.k8s[*].public_ip
+output "instance_public_ip" {
+  value = aws_instance.kops_admin.public_ip
+}
+
+output "instance_id" {
+  value = aws_instance.kops_admin.id
 }

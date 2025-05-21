@@ -1,50 +1,20 @@
 provider "aws" {
-  region = var.region
+  region = var.aws_region
 }
 
-resource "aws_security_group" "k8s_sg" {
-  name        = "k8s-sg"
-  description = "Security group for Kubernetes cluster"
-  vpc_id      = data.aws_vpc.default.id
+resource "aws_key_pair" "kops_key" {
+  key_name   = var.key_name
+  public_key = file(var.public_key_path)
+}
+
+resource "aws_security_group" "kops_sg" {
+  name        = "kops-admin-sg"
+  description = "Allow SSH and internet access"
 
   ingress {
+    description = "Allow SSH"
     from_port   = 22
     to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 6443
-    to_port     = 6443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 10250
-    to_port     = 10250
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 30000
-    to_port     = 32767
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -57,18 +27,14 @@ resource "aws_security_group" "k8s_sg" {
   }
 }
 
-data "aws_vpc" "default" {
-  default = true
-}
-
-resource "aws_instance" "k8s" {
-  count         = 3
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  key_name      = var.key_name
-  vpc_security_group_ids = [aws_security_group.k8s_sg.id]
+resource "aws_instance" "kops_admin" {
+  ami                         = var.ami_id
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.kops_key.key_name
+  vpc_security_group_ids      = [aws_security_group.kops_sg.id]
+  associate_public_ip_address = true
 
   tags = {
-    Name = element(["k8s-master", "k8s-worker-1", "k8s-worker-2"], count.index)
+    Name = "kops-ansible-admin"
   }
 }
