@@ -1,3 +1,0 @@
-- name: Join Worker Node to the cluster
-  shell: "{{ hostvars['k8s-master'].kubeadm_join_command }}"
-  when: inventory_hostname != 'k8s-master'
