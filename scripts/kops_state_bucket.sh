@@ -1,5 +1,5 @@
 #!/bin/bash
-BUCKET_NAME="kops-state-yourname"
+BUCKET_NAME="preyelg-pro-3"
 REGION="us-east-2"
 
 aws s3api create-bucket \
