@@ -1,0 +1,11 @@
+- name: Delete Kubernetes Cluster
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../vars/kops-vars.yml
+  tasks:
+
+    - name: Delete cluster
+      shell: |
+        export KOPS_STATE_STORE={{ kops_state_store }}
+        kops delete cluster --name {{ cluster_name }} --yes

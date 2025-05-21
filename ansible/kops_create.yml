@@ -1,0 +1,20 @@
+- name: Create Kubernetes Cluster using Kops
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../vars/kops-vars.yml
+  tasks:
+
+    - name: Export environment variables
+      shell: |
+        export KOPS_STATE_STORE={{ kops_state_store }}
+        export AWS_REGION={{ aws_region }}
+      environment:
+        KOPS_STATE_STORE: "{{ kops_state_store }}"
+        AWS_REGION: "{{ aws_region }}"
+
+    - name: Create cluster
+      shell: |
+        kops create -f ../scripts/kops_cluster_config.yaml
+        kops update cluster --name {{ cluster_name }} --yes
+        kops validate cluster --wait 10m
