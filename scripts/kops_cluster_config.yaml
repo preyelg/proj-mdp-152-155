@@ -1,0 +1,61 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  name: cluster.k8s.local
+spec:
+  cloudProvider: aws
+  kubernetesVersion: "1.29.0"
+  networking:
+    kubenet: {}
+  zones:
+    - us-east-2a
+    - us-east-2b
+  controlPlaneZones:
+    - us-east-2a
+  etcdClusters:
+    - name: main
+      etcdMembers:
+        - name: a
+          instanceGroup: master-us-east-2a
+  topology:
+    masters: public
+    nodes: public
+  subnets:
+    - name: us-east-2a
+      zone: us-east-2a
+      type: Public
+    - name: us-east-2b
+      zone: us-east-2b
+      type: Public
+---
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  name: master-us-east-2a
+  labels:
+    kops.k8s.io/cluster: cluster.k8s.local
+spec:
+  role: Master
+  instanceRole: Master
+  machineType: t3.medium
+  minSize: 1
+  maxSize: 1
+  subnets:
+    - us-east-2a
+---
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  name: nodes
+  labels:
+    kops.k8s.io/cluster: cluster.k8s.local
+spec:
+  role: Node
+  instanceRole: Node
+  machineType: t3.medium
+  minSize: 2
+  maxSize: 2
+  subnets:
+    - us-east-2a
+    - us-east-2b
+
