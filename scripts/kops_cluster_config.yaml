@@ -7,20 +7,57 @@ spec:
   kubernetesVersion: "1.29.0"
   networking:
     kubenet: {}
-  subnets:
-  - name: us-east-2a
-    zone: us-east-2a
-    type: Public
-  - name: us-east-2b
-    zone: us-east-2b
-    type: Public
+  zones:
+    - us-east-2a
+    - us-east-2b
+  controlPlaneZones:
+    - us-east-2a
+  etcdClusters:
+    - name: main
+      etcdMembers:
+        - name: a
+          instanceGroup: master-us-east-2a
   topology:
     masters: public
     nodes: public
-  etcdClusters:
-  - name: main
-    etcdMembers:
-    - name: a
-      zone: us-east-2a
-    - name: b
-      zone: us-east-2b
+---
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  name: master-us-east-2a
+spec:
+  role: Master
+  instanceRole: Master
+  machineType: t3.medium
+  minSize: 1
+  maxSize: 1
+  subnets:
+    - us-east-2a
+  sshKeyName: linux  # 👈 Your existing EC2 key pair
+---
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  name: nodes
+spec:
+  role: Node
+  machineType: t3.medium
+  minSize: 2
+  maxSize: 2
+  subnets:
+    - us-east-2a
+    - us-east-2b
+  sshKeyName: linux  # 👈 Your existing EC2 key pair
+---
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  name: workstation
+spec:
+  role: Node
+  machineType: t3.micro
+  minSize: 1
+  maxSize: 1
+  subnets:
+    - us-east-2a
+  sshKeyName: linux  # 👈 Your existing EC2 key pair

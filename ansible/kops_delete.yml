@@ -1,11 +1,34 @@
-- name: Delete Kubernetes Cluster
+---
+- name: Delete Kubernetes Cluster using Kops
   hosts: localhost
   gather_facts: false
   vars_files:
     - ../vars/kops-vars.yml
+
   tasks:
 
-    - name: Delete cluster
+    - name: Prompt for confirmation before deleting the cluster
+      pause:
+        prompt: "⚠️ Are you sure you want to delete the Kubernetes cluster '{{ cluster_name }}'? Type 'yes' to continue"
+      register: delete_prompt
+
+    - name: Abort if user did not type 'yes'
+      fail:
+        msg: "❌ Cluster deletion aborted by user."
+      when: delete_prompt.user_input != "yes"
+
+    - name: Delete the cluster using Kops
       shell: |
         export KOPS_STATE_STORE={{ kops_state_store }}
+        export AWS_REGION={{ aws_region }}
         kops delete cluster --name {{ cluster_name }} --yes
+      environment:
+        KOPS_STATE_STORE: "{{ kops_state_store }}"
+        AWS_REGION: "{{ aws_region }}"
+
+    - name: Clean up S3 Kops state store
+      shell: |
+        aws s3 rm {{ kops_state_store }}/{{ cluster_name }} --recursive
+      environment:
+        AWS_REGION: "{{ aws_region }}"
+        

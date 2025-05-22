@@ -5,16 +5,14 @@
     - ../vars/kops-vars.yml
   tasks:
 
-    - name: Export environment variables
+    - name: Create cluster
       shell: |
         export KOPS_STATE_STORE={{ kops_state_store }}
         export AWS_REGION={{ aws_region }}
+        kops create -f ../scripts/kops_cluster_config.yaml
+        kops update cluster --name {{ cluster_name }} --yes
+        kops validate cluster --name {{ cluster_name }} --wait 10m
       environment:
         KOPS_STATE_STORE: "{{ kops_state_store }}"
         AWS_REGION: "{{ aws_region }}"
 
-    - name: Create cluster
-      shell: |
-        kops create -f ../scripts/kops_cluster_config.yaml
-        kops update cluster --name {{ cluster_name }} --yes
-        kops validate cluster --wait 10m
